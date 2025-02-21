@@ -25,7 +25,7 @@ type Client struct {
 }
 
 func newClient() *Client {
-	conn, err := grpc.Dial("localhost:50051", grpc.WithTransportCredentials(insecure.NewCredentials()))
+	conn, err := grpc.Dial("118.31.248.178:50051", grpc.WithTransportCredentials(insecure.NewCredentials()))
 	if err != nil {
 		log.Fatalf("连接服务器失败: %v", err)
 	}
