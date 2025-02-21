@@ -146,6 +146,176 @@
    - 实现完整的认证机制
    - 添加消息加密
 
+## Protocol Buffers 定义说明
+
+### 协议文件结构
+
+项目使用 Protocol Buffers 定义服务接口和消息结构。主要协议文件 `proto/chat.proto` 包含以下部分：
+
+1. **包声明和选项设置**
+   ```protobuf
+   syntax = "proto3";
+   package chat;
+   option go_package = "grpc_chat/proto";
+   ```
+
+2. **服务接口定义**
+   ```protobuf
+   service ChatService {
+     rpc Register(RegisterRequest) returns (RegisterResponse) {}
+     rpc Login(LoginRequest) returns (LoginResponse) {}
+     rpc Chat(stream ChatMessage) returns (stream ChatMessage) {}
+   }
+   ```
+
+3. **消息类型定义**
+   - 注册相关消息
+     ```protobuf
+     message RegisterRequest {
+       string username = 1;
+       string password = 2;
+     }
+
+     message RegisterResponse {
+       bool success = 1;
+       string message = 2;
+     }
+     ```
+   - 登录相关消息
+     ```protobuf
+     message LoginRequest {
+       string username = 1;
+       string password = 2;
+     }
+
+     message LoginResponse {
+       bool success = 1;
+       string message = 2;
+       string token = 3;
+     }
+     ```
+   - 聊天消息
+     ```protobuf
+     message ChatMessage {
+       string username = 1;
+       string content = 2;
+       int64 timestamp = 3;
+     }
+     ```
+
+### 生成 gRPC 代码
+
+1. **安装必要工具**
+   ```bash
+   # 安装 protoc 编译器
+   brew install protobuf  # MacOS
+   apt-get install protobuf-compiler  # Ubuntu/Debian
+
+   # 安装 Go 插件
+   go install google.golang.org/protobuf/cmd/protoc-gen-go@latest
+   go install google.golang.org/grpc/cmd/protoc-gen-go-grpc@latest
+   ```
+
+2. **生成代码命令**
+   ```bash
+   protoc --go_out=. \
+          --go_opt=paths=source_relative \
+          --go-grpc_out=. \
+          --go-grpc_opt=paths=source_relative \
+          proto/chat.proto
+   ```
+
+3. **生成的文件说明**
+   - `grpc_chat/proto/chat.pb.go`：消息类型的 Go 代码
+   - `grpc_chat/proto/chat_grpc.pb.go`：gRPC 服务接口的 Go 代码
+
+### 接口说明
+
+1. **Register 方法**
+   - 用途：新用户注册
+   - 类型：一元 RPC
+   - 请求参数：用户名和密码
+   - 返回结果：注册成功与否的状态
+
+2. **Login 方法**
+   - 用途：用户登录
+   - 类型：一元 RPC
+   - 请求参数：用户名和密码
+   - 返回结果：登录状态和认证令牌
+
+3. **Chat 方法**
+   - 用途：实时聊天
+   - 类型：双向流式 RPC
+   - 流数据：聊天消息（包含用户名、内容和时间戳）
+   - 特点：支持实时消息收发
+
+### 类型映射
+
+| Protocol Buffers 类型 | Go 类型 |
+|---------------------|----------|
+| string | string |
+| bool | bool |
+| int64 | int64 |
+| repeated | slice |
+| message | struct |
+
+### 最佳实践
+
+1. **字段编号**
+   - 为每个字段分配唯一编号
+   - 1-15 编号占用 1 个字节，常用字段优先使用
+   - 16-2047 编号占用 2 个字节
+
+2. **消息设计**
+   - 相关字段组织在同一消息中
+   - 避免过深的消息嵌套
+   - 考虑向后兼容性
+
+3. **服务设计**
+   - 根据业务场景选择适当的 RPC 类型
+   - 单向通信用一元 RPC
+   - 实时交互用双向流式 RPC
+
+## 服务器部署指南
+
+### 1. 准备文件
+需要将以下文件和目录复制到服务器：
+- `server/` 目录（服务器端代码）
+- `proto/` 目录（协议文件）
+- `grpc_chat/` 目录（生成的 gRPC 代码）
+- `go.mod` 和 `go.sum`（依赖管理文件）
+
+### 2. 环境配置
+1. 确保服务器已安装 Go 1.22 或更高版本
+2. 将项目文件放置在服务器的工作目录中
+3. 执行依赖安装：
+   ```bash
+   go mod tidy
+   ```
+
+### 3. 配置网络
+1. 确保服务器的 50051 端口已开放
+2. 如果有防火墙，需要添加相应的端口规则
+3. 如果需要外网访问，建议配置 SSL/TLS 证书
+
+### 4. 启动服务
+1. 进入项目目录
+2. 启动服务器：
+   ```bash
+   go run server/server.go
+   ```
+   或者编译后运行：
+   ```bash
+   go build -o chat_server server/server.go
+   ./chat_server
+   ```
+
+### 5. 注意事项
+- 建议使用进程管理工具（如 systemd、supervisor 等）来管理服务
+- 考虑配置日志记录和监控
+- 在生产环境中实现真实的用户认证和 token 机制
+- 定期备份用户数据
+
 ## 服务器部署指南
 
 ### 1. 准备文件
