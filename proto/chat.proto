@@ -1,0 +1,47 @@
+syntax = "proto3";
+
+package chat;
+
+option go_package = "grpc_chat/proto";
+
+// 聊天服务定义
+service ChatService {
+  // 用户注册
+  rpc Register(RegisterRequest) returns (RegisterResponse) {}
+  // 用户登录
+  rpc Login(LoginRequest) returns (LoginResponse) {}
+  // 发送消息（双向流式RPC）
+  rpc Chat(stream ChatMessage) returns (stream ChatMessage) {}
+}
+
+// 注册请求
+message RegisterRequest {
+  string username = 1;
+  string password = 2;
+}
+
+// 注册响应
+message RegisterResponse {
+  bool success = 1;
+  string message = 2;
+}
+
+// 登录请求
+message LoginRequest {
+  string username = 1;
+  string password = 2;
+}
+
+// 登录响应
+message LoginResponse {
+  bool success = 1;
+  string message = 2;
+  string token = 3;
+}
+
+// 聊天消息
+message ChatMessage {
+  string username = 1;
+  string content = 2;
+  int64 timestamp = 3;
+}
